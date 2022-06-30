@@ -1,0 +1,275 @@
+﻿<main id="VuePage">
+    <br />
+    <div id="ChartKlineDiv" style="height:450px;"></div>
+</main>
+@section scripts {
+    <script>
+        var VuePage = new Vue({
+            el: '#VuePage'
+            , data: function () {
+                var data = {
+                    Chart: {
+                        ChartKlineObj: null
+                        , ChartKlineOption: {}
+                    }
+                };
+                return data;
+            }
+            , mounted: function () {
+                var self = this;
+                // 頁面載入完成後執行
+                self.drawKlineChart();
+                self.GetKLineData();
+            }
+            , methods: {
+                // 繪製k線圖表
+                drawKlineChart: function () {
+                    var self = this;
+
+                    var upColor = '#ec0000';
+                    var upBorderColor = '#8A0000';
+                    var downColor = '#00da3c';
+                    var downBorderColor = '#008F28';
+
+                    var data0 = self.splitData([]);
+
+                    self.Chart.ChartKlineOption = {
+                        title: {
+                            text: '',
+                            subtext: '',
+                            left: 0
+                        },
+                        animation: false,
+                        axisPointer: {
+                            link: { xAxisIndex: 'all' },
+                            label: {
+                                backgroundColor: '#777'
+                            }
+                        },
+                        toolbox: {
+                            feature: {
+                                restore: {},
+                                saveAsImage: {}
+                            }
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            confine: true,
+                            axisPointer: {
+                                type: 'cross'
+                            },
+                            backgroundColor: 'rgba(245, 245, 245, 0.8)',
+                            borderWidth: 1,
+                            borderColor: '#ccc',
+                            padding: 10,
+                            textStyle: {
+                                color: '#000'
+                            },
+                            position: function (pos, params, el, elRect, size) {
+                                var obj = { top: 10 };
+                                obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
+                                return obj;
+                            },
+                            formatter: function (param) {
+                                if (param[0].seriesType == "candlestick") {
+                                    return [
+                                        '日期' + ': ' + param[0].name + '<hr size=1 style="margin: 3px 0">',
+                                        '開盤價' + ': ' + self.CommaFormat(param[0].data[1]) + ' <br/> ',
+                                        '最高價' + ': ' + self.CommaFormat(param[0].data[4]) + '<br/>',
+                                        '最低價' + ': ' + self.CommaFormat(param[0].data[3]) + '<br/>',
+                                        '收盤價' + ': ' + self.CommaFormat(param[0].data[2]) + '<br/>',
+                                        '成交量' + ': ' + self.CommaFormat(param[1].data) + '<br/>'
+                                    ].join('');
+                                } else if (param[0].seriesType == "bar") {
+                                    return [
+                                        '日期' + ': ' + param[1].name + '<hr size=1 style="margin: 3px 0">',
+                                        '開盤價' + ': ' + self.CommaFormat(param[1].data[1]) + '<br/>',
+                                        '最高價' + ': ' + self.CommaFormat(param[1].data[4]) + '<br/>',
+                                        '最低價' + ': ' + self.CommaFormat(param[1].data[3]) + '<br/>',
+                                        '收盤價' + ': ' + self.CommaFormat(param[1].data[2]) + '<br/>',
+                                        '成交量' + ': ' + self.CommaFormat(param[0].data) + '<br/>'
+                                    ].join('');
+                                }
+                            }
+                        },
+                        grid: [
+                            {
+                                left: '10%',
+                                right: '8%',
+                                height: '50%'
+                            },
+                            {
+                                left: '10%',
+                                right: '8%',
+                                bottom: '20%',
+                                height: '15%'
+                            }
+                        ],
+                        xAxis: [
+                            {
+                                type: 'category',
+                                data: data0.categoryData,
+                                scale: true,
+                                boundaryGap: false,
+                                axisLine: { onZero: false },
+                                splitLine: { show: false },
+                                splitNumber: 20,
+                                min: 'dataMin',
+                                max: 'dataMax',
+                                axisPointer: {
+                                    z: 100
+                                }
+                            },
+                            {
+                                type: 'category',
+                                gridIndex: 1,
+                                data: data0.categoryData,
+                                scale: true,
+                                boundaryGap: false,
+                                axisLine: { onZero: false },
+                                axisTick: { show: false },
+                                splitLine: { show: false },
+                                axisLabel: { show: false },
+                                splitNumber: 20,
+                                min: 'dataMin',
+                                max: 'dataMax'
+                            }
+                        ],
+                        yAxis: [
+                            {
+                                scale: true,
+                                splitArea: {
+                                    show: true
+                                }
+                            },
+                            {
+                                scale: true,
+                                gridIndex: 1,
+                                splitNumber: 2,
+                                axisLabel: { show: false },
+                                axisLine: { show: false },
+                                axisTick: { show: false },
+                                splitLine: { show: false }
+                            }
+                        ],
+                        dataZoom: [
+                            {
+                                type: 'inside',
+                                xAxisIndex: [0, 1],
+                                start: 0,
+                                end: 100
+                            },
+                            {
+                                show: true,
+                                xAxisIndex: [0, 1],
+                                type: 'slider',
+                                y: '90%',
+                                start: 0,
+                                end: 100
+                            }
+                        ],
+                        series: [
+                            {
+                                name: '日K',
+                                type: 'candlestick',
+                                data: data0.values,
+                                itemStyle: {
+                                    normal: {
+                                        color: upColor,
+                                        color0: downColor,
+                                        borderColor: upBorderColor,
+                                        borderColor0: downBorderColor
+                                    }
+                                },
+                                markPoint: {
+                                    label: {
+                                        normal: {
+                                            formatter: function (param) {
+                                                return param != null ? param.name + '\n' + param.value : '';
+                                            }
+                                        }
+                                    }
+                                    , data: []
+                                    , symbolOffset: [0, -20]//位置偏移
+                                }
+                            }
+                            , {
+                                name: 'Volumn',
+                                type: 'bar',
+                                xAxisIndex: 1,
+                                yAxisIndex: 1,
+                                data: data0.volume,
+                                itemStyle: {
+                                    normal: {
+                                        color: '#7fbe9e'
+                                    },
+                                    emphasis: {
+                                        color: '#140'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (self.Chart.ChartKlineObj == null) {
+                        self.Chart.ChartKlineObj = echarts.init(document.getElementById('ChartKlineDiv'));
+                        // 使用刚指定的配置项和数据显示图表。
+                        self.Chart.ChartKlineObj.setOption(self.Chart.ChartKlineOption);
+                    }
+                }
+                // 分割k線資料
+                , splitData: function (rawData) {
+                    var categoryData = [];
+                    var values = [];
+                    var volume = [];
+                    for (var i = 0; i < rawData.length; i++) {
+                        categoryData.push(rawData[i][0]);
+                        values.push(rawData[i].slice(1, 5));
+                        volume.push(rawData[i][5]);
+                    }
+                    return { categoryData: categoryData, values: values, volume: volume };
+                }
+                // 取得K線資料
+                , GetKLineData: function () {
+                    var self = this;
+                    var postData = {};
+                    // 使用 jQuery Ajax 傳送至後端
+                    $.ajax({
+                        url:'@Url.Action("GetKLineData", "Home")',
+                        method:'POST',
+                        dataType:'json',
+                        data: { inModel: postData },
+                        success: function (datas) {
+                            if (datas.ErrMsg) {
+                                alert(datas.ErrMsg);
+                                return;
+                            }
+                            // 將後端資料綁定到圖表上
+                            var value = datas.KlineData;
+                            var data0 = self.splitData(value);
+                            self.Chart.ChartKlineOption.title.text = datas.KlineName;
+                            self.Chart.ChartKlineOption.xAxis[0].data = data0.categoryData;
+                            self.Chart.ChartKlineOption.xAxis[1].data = data0.categoryData;
+                            self.Chart.ChartKlineOption.series[0].data = data0.values;
+                            self.Chart.ChartKlineOption.series[1].data = data0.volume;
+                            self.Chart.ChartKlineObj.setOption(self.Chart.ChartKlineOption);
+                            self.Chart.ChartKlineObj.resize();
+                        },
+                        error: function (err) {
+                            alert(err.responseText);
+                        }
+                    });
+                }
+                 // 千分位
+                , CommaFormat: function (value) {
+                    if (value === null) {
+                        return '';
+                    } else {
+                        return value.toString().replace(/^(-?\d+?)((?:\d{3})+)(?=\.\d+$|$)/, function (all, pre, groupOf3Digital) {
+                            return pre + groupOf3Digital.replace(/\d{3}/g, ',$&');
+                        });
+                    }
+                }
+            }
+        })
+    </script>
+}
